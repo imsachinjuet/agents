@@ -2,15 +2,11 @@ import os
 from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
-from langchain_community.utilities import SQLDatabase
-from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
-from langchain.agents import initialize_agent, AgentType
 from langchain_core.prompts import ChatPromptTemplate
 
 # Load secrets
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-SUPABASE_DB_URI = os.getenv("SUPABASE_DB_URI")
 
 # Prompt template
 SUMMARY_KEYWORD_PROMPT = """
@@ -28,29 +24,41 @@ User message: {question}
 """
 
 def extract_summary_keyword_via_llm(question: str) -> str | None:
+    """
+    Extract summary keywords from a question using LLM
+    
+    Args:
+        question: The user's question
+        
+    Returns:
+        LLM response indicating if it's a summary keyword search
+    """
     prompt = ChatPromptTemplate.from_template(SUMMARY_KEYWORD_PROMPT)
-    llm = ChatOpenAI(model_name="gpt-4.1", temperature=0, openai_api_key=OPENAI_API_KEY)
+    llm = ChatOpenAI(model_name="gpt-4o", temperature=0, openai_api_key=OPENAI_API_KEY)
     resp = (prompt | llm).invoke({"question": question}).content.strip()
     return resp
 
-print(extract_summary_keyword_via_llm("what is sum of 2 and 2"))
+def main():
+    """Main function to test the LLM functionality"""
+    print("🤖 LangChain Agent - Summary Keyword Extraction")
+    print("=" * 50)
+    
+    # Test the LLM function
+    test_questions = [
+        "what is sum of 2 and 2",
+        "search for documents about machine learning",
+        "find summaries containing python programming",
+        "what is the weather today"
+    ]
+    
+    for question in test_questions:
+        print(f"\nQuestion: {question}")
+        result = extract_summary_keyword_via_llm(question)
+        print(f"Result: {result}")
+    
+    print("\n" + "=" * 50)
+    print("✅ Agent1.py is now clean and focused on LangChain functionality!")
+    print("💡 For Supabase operations, use the SupabaseClient class from supabase_client.py")
 
-# Database
-db = SQLDatabase.from_uri(SUPABASE_DB_URI)
-
-print("Tables:", db.get_usable_table_names())
-
-# SQL Toolkit
-llm2 = ChatOpenAI(model="gpt-4.1", temperature=0, openai_api_key=OPENAI_API_KEY)
-toolkit = SQLDatabaseToolkit(db=db, llm=llm2)
-
-# Agent
-agent = initialize_agent(
-    toolkit.get_tools(),
-    llm2,
-    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    verbose=True
-)
-
-response = agent.run("List all tables in the Supabase database.")
-print(response)
+if __name__ == "__main__":
+    main()
